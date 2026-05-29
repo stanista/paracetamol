@@ -14,6 +14,8 @@ Tiny Docker container watchdog from another container, based on HTTP checks.
 
 It probes configured URLs on an interval. If a probe fails, or returns a status code outside `ok`, it runs `docker restart` for the configured container.
 
+It is not a replacement for proper healthchecks, supervision or orchesration. It is a small symptom reliever for containers that are not responding and you just want them to restart. 
+
 ## Usage
 
 ```yaml
