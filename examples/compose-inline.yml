@@ -1,0 +1,19 @@
+services:
+  paracetamol:
+    image: ghcr.io/stanista/paracetamol:latest
+    environment:
+      CONFIG: |
+        interval: 60
+        startup_sleep: 30
+        checks:
+          app:
+            url: http://app/
+            restart: app
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+
+  app:
+    image: nginx:alpine
+    container_name: app
+    restart: unless-stopped

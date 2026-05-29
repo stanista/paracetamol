@@ -1,0 +1,12 @@
+services:
+  paracetamol:
+    image: ghcr.io/stanista/paracetamol:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config.yml:/config.yml:ro
+    restart: unless-stopped
+
+  app:
+    image: nginx:alpine
+    container_name: app
+    restart: unless-stopped

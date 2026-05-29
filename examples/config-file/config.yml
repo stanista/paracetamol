@@ -1,0 +1,8 @@
+interval: 60
+startup_sleep: 30
+
+checks:
+  app:
+    url: http://app/
+    ok: [200]
+    restart: app
