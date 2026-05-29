@@ -8,7 +8,7 @@ COPY main.go ./
 RUN go mod tidy
 RUN CGO_ENABLED=0 GOOS=linux go build -o paracetamol .
 
-FROM alpine:latest
+FROM alpine:3.20
 
 RUN apk add --no-cache docker-cli
 

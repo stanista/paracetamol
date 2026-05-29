@@ -12,8 +12,9 @@ import (
 )
 
 type Config struct {
-	Interval int              `yaml:"interval"`
-	Checks   map[string]Check `yaml:"checks"`
+	Interval     int              `yaml:"interval"`
+	StartupSleep int              `yaml:"startup_sleep"`
+	Checks       map[string]Check `yaml:"checks"`
 }
 
 type Check struct {
@@ -32,7 +33,19 @@ func main() {
 		cfg.Interval = 60
 	}
 
+	for name, check := range cfg.Checks {
+		if len(check.OK) == 0 {
+			check.OK = []int{http.StatusOK}
+			cfg.Checks[name] = check
+		}
+	}
+
 	log("started")
+
+	if cfg.StartupSleep > 0 {
+		log("sleeping %d seconds before first check", cfg.StartupSleep)
+		time.Sleep(time.Duration(cfg.StartupSleep) * time.Second)
+	}
 
 	for {
 		for name, check := range cfg.Checks {
