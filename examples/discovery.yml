@@ -15,6 +15,6 @@ services:
     container_name: app
     restart: unless-stopped
     labels:
-      paracetamol.enable: "true"
-      paracetamol.port: "80"
-      paracetamol.path: "/"
+      - "paracetamol.enable=true"
+      - "paracetamol.port=80"
+      - "paracetamol.path=/"

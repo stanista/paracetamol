@@ -18,6 +18,8 @@ It is not a replacement for proper healthchecks, supervision or orchestration. I
 
 ## Usage
 
+Manual config:
+
 ```yaml
 services:
   paracetamol:
@@ -28,12 +30,8 @@ services:
         startup_sleep: 30
         checks:
           app:
-            url: http://app/ # address of the app reachable from another container
-            ok: [200, 403]
+            url: http://app/
             restart: app
-          app2:
-            url: http://app2/
-            restart: app2
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
@@ -42,32 +40,9 @@ services:
     image: nginx:alpine
     container_name: app
     restart: unless-stopped
-
-  app2:
-    image: nginx:alpine
-    container_name: app2
-    restart: unless-stopped
 ```
 
-`startup_sleep` waits before the first check. This helps when Compose starts everything together and the watched containers need time to become responsive.
-
-## Config
-
-```yaml
-interval: 60         # seconds between checks
-startup_sleep: 30    # seconds before first check
-discover: false      # discover containers by labels
-
-checks:
-  app:
-    url: http://app:8080/health
-    ok: [200, 204]   # okayish status code
-    restart: app
-```
-
-## Discovery
-
-Auto-discovery is opt-in and conservative.
+Discovery config:
 
 ```yaml
 services:
@@ -76,6 +51,7 @@ services:
     environment:
       CONFIG: |
         interval: 60
+        startup_sleep: 30
         discover: true
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -86,29 +62,72 @@ services:
     container_name: app
     restart: unless-stopped
     labels:
-      paracetamol.enable: "true"
-      paracetamol.port: "80"
-      paracetamol.path: "/"
+      - "paracetamol.enable=true"
+      - "paracetamol.port=80"
 ```
 
-Rules:
+## Config
 
-- manual `checks` always win
-- discovered containers must set `paracetamol.enable=true`
-- discovered containers must have `restart: always` or `restart: unless-stopped`
-- discovered containers must be running
-- discovered containers need `paracetamol.url`, `paracetamol.port`, or one exposed TCP port
-- discovered checks default to `ok=200`, `failures=3`, `cooldown=300`
+Top-level config:
 
-Optional labels:
+```yaml
+interval: 60
+startup_sleep: 30
+discover: false
+
+checks:
+  app:
+    url: http://app:8080/health
+    restart: app
+    ok: [200, 204]
+    failures: 1
+    cooldown: 0
+```
+
+Fields:
+
+- `interval`: optional, seconds between check rounds, default `60`
+- `startup_sleep`: optional, seconds before the first check, default `0`
+- `discover`: optional, enable Docker label discovery, default `false`
+- `checks`: optional when `discover: true`, otherwise this is where manual checks live
+
+Manual check fields:
+
+- `url`: required, URL reachable from the `paracetamol` container
+- `restart`: required, container name or ID to restart
+- `ok`: optional, accepted HTTP status codes, default `[200]`
+- `failures`: optional, failures before restart, default `1`
+- `cooldown`: optional, seconds after restart before another restart, default `0`
+
+## Discovery
+
+Discovery reads Docker labels from running containers. It is opt-in and stricter than manual config.
+
+Required:
+
+- `discover: true` in paracetamol config
+- `paracetamol.enable=true` on the target container
+- target container must be running
+- target container must use Docker restart policy `always` or `unless-stopped`
+- target container must provide `paracetamol.url`, `paracetamol.port`, or have exactly one exposed TCP port
+
+Discovery labels:
 
 ```yaml
 labels:
-  paracetamol.url: "http://app/health"
-  paracetamol.ok: "200,204"
-  paracetamol.failures: "3"
-  paracetamol.cooldown: "300"
+  - "paracetamol.enable=true"             # required
+  - "paracetamol.url=http://app/health"   # optional, full probe URL
+  - "paracetamol.port=8080"               # optional, used when url is absent
+  - "paracetamol.protocol=http"           # optional, default http
+  - "paracetamol.path=/health"            # optional, default /
+  - "paracetamol.ok=200,204"              # optional, default 200
+  - "paracetamol.failures=3"              # optional, default 3
+  - "paracetamol.cooldown=300"            # optional, default 300
 ```
+
+If `paracetamol.url` is set, `port`, `protocol`, and `path` are ignored.
+
+Manual `checks` override discovered checks with the same name.
 
 ## Examples
 
