@@ -1,0 +1,20 @@
+services:
+  paracetamol:
+    image: ghcr.io/stanista/paracetamol:latest
+    environment:
+      CONFIG: |
+        interval: 60
+        startup_sleep: 30
+        discover: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+
+  app:
+    image: nginx:alpine
+    container_name: app
+    restart: unless-stopped
+    labels:
+      paracetamol.enable: "true"
+      paracetamol.port: "80"
+      paracetamol.path: "/"

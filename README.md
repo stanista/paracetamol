@@ -14,7 +14,7 @@ Tiny Docker container watchdog from another container, based on HTTP checks.
 
 It probes configured URLs on an interval. If a probe fails, or returns a status code outside `ok`, it runs `docker restart` for the configured container.
 
-It is not a replacement for proper healthchecks, supervision or orchesration. It is a small symptom reliever for containers that are not responding and you just want them to restart. 
+It is not a replacement for proper healthchecks, supervision or orchestration. It is a small symptom reliever for containers that are not responding and you just want them to restart.
 
 ## Usage
 
@@ -28,8 +28,8 @@ services:
         startup_sleep: 30
         checks:
           app:
-            url: http://app/ #address of the app reachable from another container
-            ok: [200, 403] 
+            url: http://app/ # address of the app reachable from another container
+            ok: [200, 403]
             restart: app
           app2:
             url: http://app2/
@@ -56,12 +56,58 @@ services:
 ```yaml
 interval: 60         # seconds between checks
 startup_sleep: 30    # seconds before first check
+discover: false      # discover containers by labels
 
 checks:
   app:
     url: http://app:8080/health
     ok: [200, 204]   # okayish status code
     restart: app
+```
+
+## Discovery
+
+Auto-discovery is opt-in and conservative.
+
+```yaml
+services:
+  paracetamol:
+    image: ghcr.io/stanista/paracetamol:latest
+    environment:
+      CONFIG: |
+        interval: 60
+        discover: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+
+  app:
+    image: nginx:alpine
+    container_name: app
+    restart: unless-stopped
+    labels:
+      paracetamol.enable: "true"
+      paracetamol.port: "80"
+      paracetamol.path: "/"
+```
+
+Rules:
+
+- manual `checks` always win
+- discovered containers must set `paracetamol.enable=true`
+- discovered containers must have `restart: always` or `restart: unless-stopped`
+- discovered containers must be running
+- discovered containers need `paracetamol.url`, `paracetamol.port`, or one exposed TCP port
+- discovered checks default to `ok=200`, `failures=3`, `cooldown=300`
+
+Optional labels:
+
+```yaml
+labels:
+  paracetamol.url: "http://app/health"
+  paracetamol.ok: "200,204"
+  paracetamol.failures: "3"
+  paracetamol.cooldown: "300"
 ```
 
 ## Examples
@@ -71,6 +117,7 @@ See:
 - `examples/config-file/config.yml`
 - `examples/config-file/docker-compose.yml`
 - `examples/compose-inline.yml`
+- `examples/discovery.yml`
 
 ## License
 
