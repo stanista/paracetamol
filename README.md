@@ -74,6 +74,7 @@ Top-level config:
 interval: 60
 startup_sleep: 30
 discover: false
+verbose: false
 
 checks:
   app:
@@ -89,6 +90,7 @@ Fields:
 - `interval`: optional, seconds between check rounds, default `60`
 - `startup_sleep`: optional, seconds before the first check, default `0`
 - `discover`: optional, enable Docker label discovery, default `false`
+- `verbose`: optional, log every successful probe, default `false`
 - `checks`: optional when `discover: true`, otherwise this is where manual checks live
 
 Manual check fields:

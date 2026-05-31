@@ -1,5 +1,6 @@
 interval: 60
 startup_sleep: 30
+verbose: false
 
 checks:
   app:

@@ -18,6 +18,7 @@ type Config struct {
 	Interval     int              `yaml:"interval"`
 	StartupSleep int              `yaml:"startup_sleep"`
 	Discover     bool             `yaml:"discover"`
+	Verbose      bool             `yaml:"verbose"`
 	Checks       map[string]Check `yaml:"checks"`
 }
 
@@ -63,6 +64,7 @@ func main() {
 	if cfg.Interval == 0 {
 		cfg.Interval = 60
 	}
+	verbose = cfg.Verbose
 
 	for name, check := range cfg.Checks {
 		cfg.Checks[name] = normalizeCheck(check)
@@ -130,7 +132,7 @@ func handleCheck(name string, check Check, state *CheckState) {
 
 	if contains(check.OK, code) {
 		state.Failures = 0
-		log("[%s] healthy, HTTP %d", name, code)
+		logVerbose("[%s] healthy, HTTP %d", name, code)
 		return
 	}
 
@@ -369,4 +371,14 @@ func contains(values []int, target int) bool {
 func log(format string, args ...any) {
 	now := time.Now().Format("2006-01-02 15:04:05")
 	fmt.Printf("[%s] [paracetamol] %s\n", now, fmt.Sprintf(format, args...))
+}
+
+var verbose bool
+
+func logVerbose(format string, args ...any) {
+	if !verbose {
+		return
+	}
+
+	log(format, args...)
 }
