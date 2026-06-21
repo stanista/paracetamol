@@ -64,13 +64,16 @@ func main() {
 	if cfg.Interval == 0 {
 		cfg.Interval = 60
 	}
-	verbose = cfg.Verbose
 
 	for name, check := range cfg.Checks {
 		cfg.Checks[name] = normalizeCheck(check)
 	}
 
-	log("started")
+	if cfg.Verbose {
+		log("started with verbose logging enabled")
+	} else {
+		log("started")
+	}
 
 	if cfg.StartupSleep > 0 {
 		log("sleeping %d seconds before first check", cfg.StartupSleep)
@@ -95,7 +98,7 @@ func main() {
 			if states[name] == nil {
 				states[name] = &CheckState{}
 			}
-			handleCheck(name, check, states[name])
+			handleCheck(name, check, states[name], cfg.Verbose)
 		}
 
 		time.Sleep(time.Duration(cfg.Interval) * time.Second)
@@ -121,7 +124,7 @@ func loadConfig() (Config, error) {
 	return cfg, nil
 }
 
-func handleCheck(name string, check Check, state *CheckState) {
+func handleCheck(name string, check Check, state *CheckState, verbose bool) {
 	code, err := probe(check.URL)
 
 	if err != nil {
@@ -132,7 +135,9 @@ func handleCheck(name string, check Check, state *CheckState) {
 
 	if contains(check.OK, code) {
 		state.Failures = 0
-		logVerbose("[%s] healthy, HTTP %d", name, code)
+		if verbose {
+			log("[%s] healthy, HTTP %d", name, code)
+		}
 		return
 	}
 
@@ -371,14 +376,4 @@ func contains(values []int, target int) bool {
 func log(format string, args ...any) {
 	now := time.Now().Format("2006-01-02 15:04:05")
 	fmt.Printf("[%s] [paracetamol] %s\n", now, fmt.Sprintf(format, args...))
-}
-
-var verbose bool
-
-func logVerbose(format string, args ...any) {
-	if !verbose {
-		return
-	}
-
-	log(format, args...)
 }
