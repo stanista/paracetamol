@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -81,6 +82,7 @@ func main() {
 	}
 
 	states := map[string]*CheckState{}
+	lastMonitored := ""
 
 	for {
 		checks := cfg.Checks
@@ -92,6 +94,12 @@ func main() {
 			}
 
 			checks = mergeChecks(cfg.Checks, discovered)
+		}
+
+		monitored := monitoredServices(checks)
+		if monitored != lastMonitored {
+			log("monitoring services: %s", monitored)
+			lastMonitored = monitored
 		}
 
 		for name, check := range checks {
@@ -297,6 +305,20 @@ func mergeChecks(manual, discovered map[string]Check) map[string]Check {
 	}
 
 	return checks
+}
+
+func monitoredServices(checks map[string]Check) string {
+	if len(checks) == 0 {
+		return "none"
+	}
+
+	names := make([]string, 0, len(checks))
+	for name := range checks {
+		names = append(names, name)
+	}
+
+	sort.Strings(names)
+	return strings.Join(names, ", ")
 }
 
 func normalizeCheck(check Check) Check {
